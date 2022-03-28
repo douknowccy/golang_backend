@@ -17,10 +17,16 @@ func Register(c *fiber.Ctx) error {
 	if err := c.BodyParser(&userData); err != nil {
 		return err
 	}
+	if userData["email"] == "" || userData["password"] == "" {
+		responseStruct.Message = "internal server error"
+		responseStruct.Status = fiber.StatusInternalServerError
+
+		return c.JSON(responseStruct)
+	}
 	database.DB.Where("email =?", userData["email"]).First(&databaseUser)
 	if databaseUser.Id != 0 {
 		responseStruct.Message = "user have already existed"
-		responseStruct.Status = fiber.StatusBadRequest
+		responseStruct.Status = fiber.StatusOK
 		return c.JSON(responseStruct)
 	}
 	password, _ := bcrypt.GenerateFromPassword([]byte(userData["password"]), 15)
@@ -38,17 +44,23 @@ func Login(c *fiber.Ctx) error {
 	if err := c.BodyParser(&userData); err != nil {
 		return err
 	}
+	if userData["email"] == "" || userData["password"] == "" {
+		responseStruct.Message = "internal server error"
+		responseStruct.Status = fiber.StatusInternalServerError
+
+		return c.JSON(responseStruct)
+	}
 	var user models.User
 	database.DB.Where("email =?", userData["email"]).First(&user)
 	if user.Id == 0 {
 		responseStruct.Message = "user not found"
-		responseStruct.Status = fiber.StatusBadRequest
+		responseStruct.Status = fiber.StatusOK
 		return c.JSON(responseStruct)
 	}
 	if err := bcrypt.CompareHashAndPassword(user.Password, []byte(userData["password"])); err != nil {
 
 		responseStruct.Message = "password incorrect"
-		responseStruct.Status = fiber.StatusBadRequest
+		responseStruct.Status = fiber.StatusOK
 		return c.JSON(responseStruct)
 
 	}
